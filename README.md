@@ -7,6 +7,7 @@ A utility to make small bash scripts in my projects convenient and concise.
 
 - need to parse docopt strings
 - assertions will map 1-to-1 to `test` "conditional evaluation utility", in natural language instead.
+- I think I need a default interpreter for the script e.g. defaults to "bash" or can do `#!/usr/bin/env .use python`
 
 ## Installation
 
@@ -30,6 +31,7 @@ transparently, as long as it specifies `.use` in the shebang line.
 - the script can now print usage with `-h`, `-help`, and `--help` without it
   being explicitly checked for.
 - all arguments will be validated according to docopt grammar.
+- Is there a way to summarize it in 80 characters?
 
 ## File Structure
 
@@ -57,6 +59,7 @@ File: `.example`
 #!/usr/bin/env .use
 # Some example helper script
 # Usage: .example <some-arg> [<some-optional-arg>]
+#   .example -option 
 # Options:
 #   <some-arg>          Is some argument
 #   <some-optional-arg> Is some optional argument
