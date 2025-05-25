@@ -8,6 +8,9 @@ A utility to make small bash scripts in my projects convenient and concise.
 - need to parse docopt strings
 - assertions will map 1-to-1 to `test` "conditional evaluation utility", in natural language instead.
 - I think I need a default interpreter for the script e.g. defaults to "bash" or can do `#!/usr/bin/env .use python`
+- possible options to the `.use` CLI:
+  - "-i <interpreter>" to specify the interpreter in a script e.g. `#!/usr/bin/env .use -i python3`
+  - "-p <path>" do not use environment variable PATH and instead search the passed paths (colon-separated)
 
 ## Installation
 
