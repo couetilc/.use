@@ -64,3 +64,9 @@ File: `.example`
 #   <some-arg> is a file
 #   <some-optional-arg> is a non-zero number
 ```
+
+## Contributing
+
+Install
+- go
+- direnv
