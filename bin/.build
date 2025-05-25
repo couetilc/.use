@@ -1,4 +1,9 @@
-#!/usr/bin/env bash
+#!/usr/bin/env .use
+# short summary
+#
+# Usage: .build
+#
+# Longer description
 
 go build \
 	-C "$rootdir" \
