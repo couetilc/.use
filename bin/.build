@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+go build \
+	-C "$rootdir" \
+	-o "$rootdir/bin/.use" \
+	"."
