@@ -1,0 +1,6 @@
+#!/usr/bin/env .use
+# dummy script for testing
+# Usage: .dummy
+# Longer Description
+# Options: none
+# Assertions: none
