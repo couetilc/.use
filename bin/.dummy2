@@ -1,0 +1,4 @@
+#!/usr/bin/env .use
+# another dummy
+# Usage: .dummy2
+echo look another dummy

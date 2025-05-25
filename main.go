@@ -46,6 +46,8 @@ func main() {
 			continue
 		}
 
+		matchCount := 0
+
 		entries, err := os.ReadDir(dirpath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error %s: os readdir(%s)\n", err, dirpath)
@@ -82,6 +84,8 @@ func main() {
 					os.Exit(1)
 				}
 
+				defer file.Close()
+
 				reader := bufio.NewReader(file)
 
 				bytesRead, err := reader.Read(buffer)
@@ -104,7 +108,29 @@ func main() {
 					}
 
 					if match {
-						fmt.Println("Found one: " + fpath)
+						if matchCount > 0 {
+							fmt.Println("")
+						}
+
+						matchCount += 1
+
+						fmt.Printf("%s\t(%s)\n", filepath.Base(fpath), fpath)
+
+						// Now I want to parse the usage script out of it.
+						file.Seek(0, 0)
+						scanner := bufio.NewScanner(file)
+						for scanner.Scan() {
+							line := scanner.Text()
+							// discard shebang line
+							if strings.HasPrefix(line, "#!") {
+								continue
+							} else if strings.HasPrefix(line, "#") {
+								fmt.Println(line)
+							} else {
+								break
+							}
+						}
+
 					}
 				}
 			}

@@ -4,3 +4,5 @@
 # Longer Description
 # Options: none
 # Assertions: none
+
+echo hello dummy
