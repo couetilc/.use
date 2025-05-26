@@ -9,14 +9,18 @@ import (
 	"io"
 	"regexp"
 	"errors"
+	"os/exec"
+	"log"
 )
 
 // todo: channel-fy this. Like Unix pipes. Communicate data through channels:
-// split paths into directory names | list directory contents | 
-// how do I make sure this is deterministically ordered? I have to block/buffer at the end until the sequence of things arrive
-// will be an array with a linked list e.g.
-// [ { (head node) value is max, next pointer is to highest value or null, prev is to tail }
-//   { (tail node) value is min, next pointer is to head, prev is to lowest value or null }
+// split paths into directory names | list directory contents | how do I make
+// sure this is deterministically ordered? I have to block/buffer at the end
+// until the sequence of things arrive will be an array with a linked list e.g.
+// [ { (head node) value is max, next pointer is to highest value or null, prev
+// is to tail }
+//   { (tail node) value is min, next pointer is to head, prev is to lowest
+//   value or null }
 //   { 3, 5, 0 }
 //   { 1, 1, 5 }
 //   { 2, 4, 3 }
@@ -25,126 +29,145 @@ import (
 // as "3" then "1" then "2". We'll also store an index into a buffer array that
 // we'll set according the the segment that came in.
 func main() {
-	fmt.Println(os.Args)
-	fmt.Println(len(os.Args))
+	if len(os.Args) == 1 {
 
-	// if: len(os.Args) == 1 then list the scripts like I've already implemented.
-	// else: executing a script behavior
-	//	- parse flags to .use ("-h" help, "-i" interpreter, "-p" path (actually not sure this one makes sense))
-	//      - parse target script (should be last argument)
-	//	- parse flags to script ("-h", "-help" or "--help" should print usage)
-	//	- if no help flag, should execute the script using the specified (or default) interpreter
-	//	- default is bash, or maybe $SHELL
+		path := os.Getenv("PATH")
+		paths := strings.SplitSeq(path, string(os.PathListSeparator))
 
-	path := os.Getenv("PATH")
-	paths := strings.SplitSeq(path, string(os.PathListSeparator))
+		for dirpath := range paths {
+			dstat, err := os.Stat(dirpath)
 
-	for dirpath := range paths {
-		dstat, err := os.Stat(dirpath)
+			if os.IsNotExist(err) {
+				// part of PATH, but doesn't exist
+				continue
+			}
 
-		if os.IsNotExist(err) {
-			// part of PATH, but doesn't exist
-			continue
-		}
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error %s: os statdir(%s)\n", err, dirpath)
+				os.Exit(1)
+			}
 
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error %s: os statdir(%s)\n", err, dirpath)
-			os.Exit(1)
-		}
+			if !dstat.IsDir() {
+				// PATH should only contain path prefixes, aka directories
+				continue
+			}
 
-		if !dstat.IsDir() {
-			// PATH should only contain path prefixes, aka directories
-			continue
-		}
+			matchCount := 0
 
-		matchCount := 0
+			entries, err := os.ReadDir(dirpath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error %s: os readdir(%s)\n", err, dirpath)
+				os.Exit(1)
+			}
 
-		entries, err := os.ReadDir(dirpath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error %s: os readdir(%s)\n", err, dirpath)
-			os.Exit(1)
-		}
+			for _, entry := range entries {
+				if entry.Type().IsRegular() {
+					fpath := filepath.Join(dirpath, entry.Name())
 
-		for _, entry := range entries {
-			if entry.Type().IsRegular() {
-				fpath := filepath.Join(dirpath, entry.Name())
-
-				fstat, err := os.Stat(fpath)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "os stat(%s)\n", fpath)
-					os.Exit(1)
-				}
-
-				if fstat.Mode() & 0111 == 0 {
-					// not an executable
-					continue
-				}
-
-				buffer := make([]byte, 256)
-
-				file, err := os.Open(fpath)
-
-				if errors.Is(err, os.ErrPermission) {
-					// not allowed to open file
-					continue
-				}
-
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error %s\n", os.ErrPermission)
-					fmt.Fprintf(os.Stderr, "Error %s: os open(%s)\n", err, fpath)
-					os.Exit(1)
-				}
-
-				defer file.Close()
-
-				reader := bufio.NewReader(file)
-
-				bytesRead, err := reader.Read(buffer)
-
-				if err == io.EOF {
-					// empty file
-					continue
-				}
-
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error %s: buf read(%s) #%d\n", err, fpath, bytesRead)
-					os.Exit(1)
-				}
-
-				if bytesRead >= 2 && buffer[0] == '#' && buffer[1] == '!' {
-					match, err := regexp.Match(`#!.*?.use.*?\n`, buffer)
-
+					fstat, err := os.Stat(fpath)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error %s: regexp match\n", err)
+						fmt.Fprintf(os.Stderr, "os stat(%s)\n", fpath)
+						os.Exit(1)
 					}
 
-					if match {
-						if matchCount > 0 {
-							fmt.Println("")
+					if fstat.Mode() & 0111 == 0 {
+						// not an executable
+						continue
+					}
+
+					buffer := make([]byte, 256)
+
+					file, err := os.Open(fpath)
+
+					if errors.Is(err, os.ErrPermission) {
+						// not allowed to open file
+						continue
+					}
+
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error %s\n", os.ErrPermission)
+						fmt.Fprintf(os.Stderr, "Error %s: os open(%s)\n", err, fpath)
+						os.Exit(1)
+					}
+
+					defer file.Close()
+
+					reader := bufio.NewReader(file)
+
+					bytesRead, err := reader.Read(buffer)
+
+					if err == io.EOF {
+						// empty file
+						continue
+					}
+
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error %s: buf read(%s) #%d\n", err, fpath, bytesRead)
+						os.Exit(1)
+					}
+
+					if bytesRead >= 2 && buffer[0] == '#' && buffer[1] == '!' {
+						match, err := regexp.Match(`#!.*?.use.*?\n`, buffer)
+
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error %s: regexp match\n", err)
 						}
 
-						matchCount += 1
-
-						fmt.Printf("%s\t(%s)\n", filepath.Base(fpath), fpath)
-
-						// Now I want to parse the usage script out of it.
-						file.Seek(0, 0)
-						scanner := bufio.NewScanner(file)
-						for scanner.Scan() {
-							line := scanner.Text()
-							// discard shebang line
-							if strings.HasPrefix(line, "#!") {
-								continue
-							} else if strings.HasPrefix(line, "#") {
-								fmt.Println(line)
-							} else {
-								break
+						if match {
+							if matchCount > 0 {
+								fmt.Println("")
 							}
-						}
 
+							matchCount += 1
+
+							fmt.Printf("%s\t(%s)\n", filepath.Base(fpath), fpath)
+
+							// Now I want to parse the usage script out of it.
+							file.Seek(0, 0)
+							scanner := bufio.NewScanner(file)
+							for scanner.Scan() {
+								line := scanner.Text()
+								// discard shebang line
+								if strings.HasPrefix(line, "#!") {
+									continue
+								} else if strings.HasPrefix(line, "#") {
+									fmt.Println(line)
+								} else {
+									break
+								}
+							}
+
+						}
 					}
 				}
 			}
 		}
+	} else {
+		// TODO: allow specifying interpreter with "-i"
+		interpreter := os.Getenv("SHELL")
+
+		cmd := exec.Command(interpreter)
+
+		// forward arguments
+		for _, arg := range os.Args[1:] {
+			cmd.Args = append(cmd.Args, arg)
+		}
+
+		// forward io
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// check for LookupPath error
+		if cmd.Err != nil {
+			log.Fatalln(cmd.Err)
+			os.Exit(1)
+		}
+
+		// run script
+		cmd.Run()
+
+		// forward exit code
+		os.Exit(cmd.ProcessState.ExitCode())
 	}
 }
