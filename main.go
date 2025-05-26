@@ -25,6 +25,16 @@ import (
 // as "3" then "1" then "2". We'll also store an index into a buffer array that
 // we'll set according the the segment that came in.
 func main() {
+	fmt.Println(os.Args)
+	fmt.Println(len(os.Args))
+
+	// if: len(os.Args) == 1 then list the scripts like I've already implemented.
+	// else: executing a script behavior
+	//	- parse flags to .use ("-h" help, "-i" interpreter, "-p" path (actually not sure this one makes sense))
+	//      - parse target script (should be last argument)
+	//	- parse flags to script ("-h", "-help" or "--help" should print usage)
+	//	- if no help flag, should execute the script using the specified (or default) interpreter
+
 	path := os.Getenv("PATH")
 	paths := strings.SplitSeq(path, string(os.PathListSeparator))
 

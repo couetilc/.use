@@ -5,6 +5,7 @@ A utility to make small bash scripts in my projects convenient and concise.
 
 ## TODO
 
+- next: make directly invoked scripts (e.g. `.dummy`) work as expected (e.g. echoes a message)
 - need to parse docopt strings
 - assertions will map 1-to-1 to `test` "conditional evaluation utility", in natural language instead.
 - I think I need a default interpreter for the script e.g. defaults to "bash" or can do `#!/usr/bin/env .use python`
