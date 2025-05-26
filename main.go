@@ -34,6 +34,7 @@ func main() {
 	//      - parse target script (should be last argument)
 	//	- parse flags to script ("-h", "-help" or "--help" should print usage)
 	//	- if no help flag, should execute the script using the specified (or default) interpreter
+	//	- default is bash, or maybe $SHELL
 
 	path := os.Getenv("PATH")
 	paths := strings.SplitSeq(path, string(os.PathListSeparator))
