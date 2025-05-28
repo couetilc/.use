@@ -1,0 +1,17 @@
+FROM go:1.24.3-alpine3.21
+
+WORKDIR /run
+
+COPY . /run
+
+RUN go build -o .use .
+
+FROM busybox:musl
+
+USER nobody
+
+WORKDIR /home
+
+COPY --from=go /run/.use .
+
+CMD [ ".use" ]
